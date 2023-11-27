@@ -31,19 +31,13 @@ export function Button({ title, variant = 'blue', size = 280, ...rest }: Props) 
             w={size}
             h={42}
             bg={bgColor}
-            rounded="sm"//border radius
+            rounded="sm"
             _pressed={{
                 bg: pressedBgColor
             }}
             {...rest}
         >
-            <Text
-                fontWeight='bold'
-                color={textColor}
-                fontSize="sm"
-            >
-                {title}
-            </Text>
+            <Text fontWeight='bold' color={textColor} fontSize="sm">{title}</Text>
         </ButtonNativeBase >
     );
 }

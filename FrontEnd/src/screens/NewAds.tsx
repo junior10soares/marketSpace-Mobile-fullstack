@@ -1,5 +1,9 @@
 import { Button } from "@components/Button";
 import { Input } from "@components/Input";
+import { UserPhoto } from "@components/UserPhoto";
+import { api } from "@services/api";
+import { AppNavigatorRoutesProps } from "@routes/app.routes";
+
 import { useNavigation } from "@react-navigation/native";
 import { Box, Checkbox, HStack, Heading, ScrollView, Text, VStack, useToast } from "native-base";
 import { ArrowLeft, Plus } from "phosphor-react-native";
@@ -8,12 +12,9 @@ import { TouchableOpacity } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import { FileInfo } from 'expo-file-system';
 import * as FileSystem from 'expo-file-system';
-import { UserPhoto } from "@components/UserPhoto";
 import { Controller, useForm } from "react-hook-form";
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { api } from "@services/api";
-import { AppNavigatorRoutesProps } from "@routes/app.routes";
 
 type FormDataProps = {
     name: string;
@@ -31,14 +32,13 @@ export function NewAds() {
 
     const navigation = useNavigation<AppNavigatorRoutesProps>()
     const toast = useToast()
-
     const [selectedPhoto, setSelectedPhoto] = useState<any>(null);
     const [photoIsLoading, setPhotoIsLoading] = useState(false);
     const [condition, setCondition] = useState<string>('')
     const [isLoading, setIsLoading] = useState(false);
     const [products, setProducts] = useState<FormDataProps[]>();
 
-    const { control, handleSubmit, formState: { errors } } = useForm<FormDataProps>({
+    const { control, handleSubmit, setValue, formState: { errors } } = useForm<FormDataProps>({
         resolver: yupResolver(signUpSchema),
     });
 
@@ -114,6 +114,12 @@ export function NewAds() {
 
             navigation.navigate('myads');
 
+            setValue('name', '');
+            setValue('description', '');
+            setValue('price', '');
+            setCondition('')
+            setSelectedPhoto(null)
+
             toast.show({
                 title: 'Produto criado com sucesso!',
                 placement: 'top',
@@ -140,6 +146,11 @@ export function NewAds() {
 
     function handleGoBack() {
         navigation.goBack()
+        setValue('name', '');
+        setValue('description', '');
+        setValue('price', '');
+        setCondition('')
+        setSelectedPhoto(null)
     }
 
     return (

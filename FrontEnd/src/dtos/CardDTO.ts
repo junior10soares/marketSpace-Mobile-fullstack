@@ -1,12 +1,19 @@
-import { ImageSourcePropType } from "react-native";
+import { ImageSourcePropType } from "react-native"
+
+type Products = {
+    path: string
+    product_id: string
+}
 
 export type CardDTO = {
-    id?: number
-    avatar: ImageSourcePropType;
-    name: string
-    is_new: boolean
-    path?: ImageSourcePropType;
-    price: string
+    id: number
     title: string
-    imgAds: ImageSourcePropType
+    name: string
+    avatar: string | ImageSourcePropType
+    is_new: boolean
+    price: string
+    imgAds: string
+    description?: string
+    product_images?: Products[]
+    is_active: boolean
 }

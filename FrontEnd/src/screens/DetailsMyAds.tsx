@@ -1,34 +1,107 @@
-import { Box, HStack, Image, ScrollView, Text, VStack } from "native-base";
-import { TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-
+import React, { useEffect, useState } from "react";
+import { Box, HStack, Image, ScrollView, Text, VStack, useToast } from "native-base";
+import { Alert, TouchableOpacity } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { ArrowLeft } from "phosphor-react-native";
 
-import imgProduct from '@assets/product.png'
+import { api } from "@services/api";
+import { useAuth } from "@hooks/useAuth";
+import { PropsDetails } from "@components/MyCard";
+import { AppError } from "@utils/AppError";
 import { UserPhoto } from "@components/UserPhoto";
 import { Button } from "@components/Button";
 import { AppNavigatorRoutesProps } from "@routes/app.routes";
-import { useState } from "react";
+import { Loading } from "@components/Loading";
 
 export function DetailsMyAds() {
 
     const navigation = useNavigation<AppNavigatorRoutesProps>();
-
     const [buttonVariant, setButtonVariant] = useState('blue');
-    const [titleVariant, setTitleVariant] = useState('Ativar Anúncio');
+    const [titleVariant, setTitleVariant] = useState('');
     const [showAdInactive, setShowAdInactive] = useState(true);
-    const [imageBlur, setImageBlur] = useState(0)
+    const [imageBlur, setImageBlur] = useState(10);
+    const [loading, setLoading] = useState(false);
+    const route = useRoute();
+    const { user } = useAuth();
+    const toast = useToast();
+
+    const { id, imgAds, active, is_new, title, price, description } = (route.params as { details?: PropsDetails })?.details || {};
 
     function handlePress() {
-        navigation.goBack()
+        navigation.navigate('myads');
     }
 
-    function handleActiveouDesactivAds() {
-        setButtonVariant((prevVariant) => (prevVariant === 'black' ? 'blue' : 'black'));
-        setTitleVariant((prevVariant) => (prevVariant === 'Desativar anúncio' ? 'Ativar Anúncio' : 'Desativar anúncio'));
-        setShowAdInactive((prevShowAdInactive) => !prevShowAdInactive)//desativar a frase ativar anuncio da img
-        setImageBlur(showAdInactive ? 0 : 2); // Define o desfoque para 10 quando o anúncio está desativado
+    async function handleToggleAdStatus() {
+        setLoading(true)
+        try {
+            await api.patch(`/products/${id}`, { is_active: !active });
+            setButtonVariant((prevVariant) => (prevVariant === 'black' ? 'blue' : 'black'));
+            setTitleVariant((prevVariant) => (prevVariant === 'Desativar anúncio' ? 'Ativar Anúncio' : 'Desativar anúncio'));
+            setShowAdInactive((prevShowAdInactive) => !prevShowAdInactive);
+            setImageBlur((prevShowAdInactive) => (prevShowAdInactive ? 0 : 10));
+        } catch (error) {
+            const isAppError = error instanceof AppError;
+            const title = isAppError ? error.message : 'Não foi possível alterar o status do anúncio';
+            toast.show({
+                title,
+                placement: 'top',
+                bgColor: 'red.500',
+            });
+        } finally {
+            setLoading(false)
+        }
     }
+
+    async function deleteProduct() {
+        try {
+            Alert.alert(
+                'Confirmação',
+                'Tem certeza que deseja excluir este item?',
+                [
+                    {
+                        text: 'Cancelar',
+                        style: 'cancel',
+                    },
+                    {
+                        text: 'Confirmar',
+                        onPress: async () => {
+                            await api.delete(`/products/${id}`);
+                            navigation.navigate('myads');
+                        },
+                    },
+                ],
+                { cancelable: false }
+            );
+        } catch (error) {
+            const isAppError = error instanceof AppError;
+            const title = isAppError ? error.message : 'Não foi possível excluir o anúncio';
+            toast.show({
+                title,
+                placement: 'top',
+                bgColor: 'red.500'
+            });
+        }
+    }
+
+    if (!id) {
+        return (
+            <ScrollView bg="gray.600" flex={1}>
+                <Text color="red.500">Detalhes do anúncio não encontrados.</Text>
+            </ScrollView>
+        );
+    }
+
+    useEffect(() => {
+        const newTitleVariant = active ? 'Desativar anúncio' : 'Ativar Anúncio';
+        const newButtonVariant = active ? 'blue' : 'black';
+        const newImageBlur = active ? 0 : 10;
+        const newShowAdInactive = !active;
+
+        setTitleVariant(newTitleVariant);
+        setButtonVariant(newButtonVariant);
+        setImageBlur(newImageBlur);
+        setShowAdInactive(newShowAdInactive);
+    }, [active]);
 
     return (
         <ScrollView bg='gray.600' flex={1}>
@@ -37,22 +110,30 @@ export function DetailsMyAds() {
                     <ArrowLeft />
                 </TouchableOpacity>
             </Box>
-            <Image
-                alt="img product"
-                source={imgProduct}
-                w={'100%'}
-                blurRadius={imageBlur}
-            />
+            {loading ? (
+                <Loading />
+            ) : (
+                <Image
+                    alt="img product"
+                    source={{ uri: `${api.defaults.baseURL}/images/${imgAds}` }}
+                    w={'100%'}
+                    h={280}
+                    blurRadius={imageBlur}
+                />
+            )}
             {showAdInactive && (
                 <Text position={'absolute'} fontWeight={'bold'} fontSize={'sm'} color={'gray.700'} left={120} top={240}>
                     Anúncio desativado
                 </Text>
             )}
             <HStack p={23}>
-                <UserPhoto size={23} alt="img do profile" />
-                <Text ml={3} fontSize={'sm'} color={'gray.100'}>Junior Soares</Text>
+                {loading ? (
+                    <Loading />
+                ) : (
+                    <UserPhoto size={23} alt="img do profile" source={{ uri: `${api.defaults.baseURL}/images/${user.avatar}` }} />
+                )}
+                <Text ml={3} fontSize={'sm'} color={'gray.100'}>{user.name}</Text>
             </HStack>
-
             <VStack ml={23}>
                 <Text
                     bg={'gray.500'}
@@ -62,21 +143,31 @@ export function DetailsMyAds() {
                     color='gray.200'
                     fontWeight='bold'
                     fontSize={10}
-                    rounded="full">NOVO
+                    rounded="full">
+                    {is_new ? 'NOVO' : 'USADO'}
                 </Text>
-
                 <HStack justifyContent={'space-between'} alignItems={'center'} mr={23} mt={3}>
-                    <Text fontSize='xl' fontWeight={'bold'} color={'gray.100'}>Bicicleta</Text>
-                    <Text color={'blue.500'} fontSize='xl' fontWeight={'bold'}>R$ 120,00</Text>
+                    <Text fontSize='xl' fontWeight={'bold'} color={'gray.100'}>{title}</Text>
+                    <Text color={'blue.500'} fontSize='xl' fontWeight={'bold'}>R$ {price}</Text>
                 </HStack>
-                <Text mt={2}>
-                    Cras congue cursus in tortor sagittis placerat nunc, tellus arcu. Vitae ante leo eget maecenas urna mattis cursus. Mauris metus amet nibh mauris mauris accumsan, euismod. Aenean leo nunc, purus iaculis in aliquam.
+                <Text mt={2} pb={20}>
+                    {description}
                 </Text>
-
-                <Button onPress={handleActiveouDesactivAds} title={titleVariant} w={327} variant={buttonVariant} mt={2} />
-                <Button title="Excluir anúncio" w={327} variant='gray' mt={2} />
-
+                <Button
+                    title={titleVariant}
+                    w={327}
+                    variant={buttonVariant}
+                    mt={2}
+                    onPress={handleToggleAdStatus}
+                />
+                <Button
+                    title="Excluir anúncio"
+                    w={327}
+                    variant='gray'
+                    mt={2}
+                    onPress={deleteProduct}
+                />
             </VStack>
-        </ScrollView >
-    )
+        </ScrollView>
+    );
 }

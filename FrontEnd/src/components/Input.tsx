@@ -10,7 +10,6 @@ type Props = IInputProps & {
 
 export function Input({ errorMessage = '', showEyeIcon, ...rest }: Props) {
     const [isPasswordVisible, setPasswordVisibility] = useState(false);
-
     const togglePasswordVisibility = () => {
         setPasswordVisibility(!isPasswordVisible);
     };
@@ -42,7 +41,6 @@ export function Input({ errorMessage = '', showEyeIcon, ...rest }: Props) {
                     ) : undefined
                 }
             />
-
             <FormControl.ErrorMessage _text={{ color: 'red.500' }}>
                 {errorMessage}
             </FormControl.ErrorMessage>

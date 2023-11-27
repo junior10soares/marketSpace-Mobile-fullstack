@@ -1,15 +1,18 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 
-import { Flex, HStack, Icon, Input, ScrollView, Text, VStack, useToast } from "native-base";
+import { Flex, HStack, Icon, Input, ScrollView, Skeleton, Text, VStack, useToast } from "native-base";
 import { ArrowRight, MagnifyingGlass, Tag } from "phosphor-react-native";
 import { useCallback, useEffect, useState } from "react";
 import { ImageSourcePropType, TouchableOpacity } from "react-native";
 
-import { CardDTO } from "@dtos/CardDTO";
 import { AppNavigatorRoutesProps } from "@routes/app.routes";
 import { Button } from "@components/Button";
-import { Card } from "@components/Card";
+import { Card, PropsCard } from "@components/Card";
 import { UserPhoto } from "@components/UserPhoto";
+import { api } from "@services/api";
+import { AppError } from "@utils/AppError";
+import { UserDTO } from "@dtos/UserDTO";
+import { CardDTOStatic } from "@dtos/CardDTOStatic";
 
 import bike from '@assets/bike.png'
 import camisa from '@assets/camisa.png'
@@ -25,144 +28,156 @@ import perfil3 from '@assets/perfil3.jpeg'
 import perfil4 from '@assets/perfil4.jpeg'
 import perfil5 from '@assets/perfil5.jpeg'
 import perfil6 from '@assets/perfil6.jpeg'
-import profile from '@assets/profile.png'
-import { api } from "@services/api";
-import { AppError } from "@utils/AppError";
-import { UserDTO } from "@dtos/UserDTO";
 
 export function Home() {
 
-    const [products, setProducts] = useState<CardDTO[]>([
+    const [products, setProducts] = useState<CardDTOStatic[]>([
         {
             id: 1,
-            title: "Bicicleta",
-            name: 'José',
+            name: "Bicicleta",
+            nameFirst: 'José',
             avatar: perfil as ImageSourcePropType,
             is_new: true,
-            price: "R$ 970",
-            imgAds: bike
+            price: "970",
+            imgAds: bike,
         },
         {
             id: 2,
-            title: "Sofa",
-            name: 'Aline',
+            name: "Sofa",
+            nameFirst: 'Aline',
             avatar: perfil1 as ImageSourcePropType,
             is_new: true,
-            price: "R$ 500,99",
+            price: "500,99",
             imgAds: sofa
         },
         {
             id: 3,
-            title: "Luminaria",
-            name: 'João',
+            name: "Luminaria",
+            nameFirst: 'João',
             avatar: perfil2 as ImageSourcePropType,
             is_new: true,
-            price: "R$ 99,99",
+            price: "99,99",
             imgAds: luminaria
         },
         {
             id: 4,
-            title: "Tenis Vermelho",
-            name: 'Joaquim',
+            name: "Tenis Vermelho",
+            nameFirst: 'Joaquim',
             avatar: perfil3 as ImageSourcePropType,
             is_new: true,
-            price: "R$ 199,99",
+            price: "199,99",
             imgAds: tenis
         },
         {
             id: 5,
-            title: "Tenis Cinza",
-            name: 'Joana',
+            name: "Tenis Cinza",
+            nameFirst: 'Joana',
             avatar: perfil4 as ImageSourcePropType,
             is_new: true,
-            price: "R$ 51,57",
+            price: "51,57",
             imgAds: tenisdois
         },
         {
             id: 6,
-            title: "Comoda",
-            name: 'Matheus',
+            name: "Comoda",
+            nameFirst: 'Matheus',
             avatar: perfil5 as ImageSourcePropType,
             is_new: true,
-            price: "R$ 274,99",
+            price: "274,99",
             imgAds: comoda
         },
         {
             id: 7,
-            title: "Camisa",
-            name: 'Mari',
+            name: "Camisa",
+            nameFirst: 'Mari',
             avatar: perfil6 as ImageSourcePropType,
             is_new: true,
-            price: "R$ 89,99",
+            price: "89,99",
             imgAds: camisa
         },
-    ]);
-
+    ])
+    const [filteredProducts, setFilteredProducts] = useState<CardDTOStatic[]>([]);
+    const [productsUser, setProductsUser] = useState<CardDTOStatic[]>([])
+    const [photoIsLoading, setPhotoIsLoading] = useState(false);
+    const combinedProducts = [...products, ...productsUser]
+    const [qntd, setQntd] = useState<string>('')
+    const toast = useToast()
+    const navigation = useNavigation<AppNavigatorRoutesProps>()
     const [searchTerm, setSearchTerm] = useState('');
-    const [filteredProducts, setFilteredProducts] = useState<CardDTO[]>([])
 
     const [user, setUser] = useState<Pick<UserDTO, 'avatar' | 'name'>>({
         avatar: '',
         name: '',
     });
-    const [qntd, setQntd] = useState<string>('')
-
-    const toast = useToast()
-
-    const navigation = useNavigation<AppNavigatorRoutesProps>()
 
     function handleGoNewAds() {
         navigation.navigate('newAds')
     }
 
-    function handleGoDetails(product: CardDTO) {
-        navigation.navigate('details', { product })
+    function handleGoDetails(cardInfo: PropsCard) {
+        navigation.navigate('details', { details: cardInfo })
     }
 
     function handleMyAds() {
         navigation.navigate('myads')
     }
 
+    function getDynamicImageSource(product: CardDTOStatic): ImageSourcePropType | undefined {
+        if (product.imgAds) {
+            return product.imgAds;
+        } else if (typeof product.product_images?.[0]?.path === 'string') {
+            return { uri: `${api.defaults.baseURL}/images/${product.product_images[0].path}` };
+        }
+        return undefined;
+    }
+
     function filterProducts(text: string) {
         setSearchTerm(text);
         if (text === '') {
-            setFilteredProducts(products);
+            setFilteredProducts(combinedProducts);
         } else {
-            const filtered = products.filter(product =>
-                product.title.toLowerCase().includes(text.toLowerCase())
+            const filtered = combinedProducts.filter(product =>
+                product.name.toLowerCase().includes(text.toLowerCase())
             );
-            setFilteredProducts(filtered)
+            setFilteredProducts(filtered);
         }
     }
 
-    useEffect(() => {
-        async function fetchQntProduct() {
-            try {
-                const response = await api.get('/users/products');
-                setQntd(response.data.length)
-            } catch (error) {
-                const isAppError = error instanceof AppError;
-                const title = isAppError ? error.message : 'Não foi possível carregar o usuário';
-                toast.show({
-                    title,
-                    placement: 'top',
-                    bgColor: 'red.500'
-                })
+    useFocusEffect(
+        useCallback(() => {
+            async function fetchData() {
+                try {
+                    const response = await api.get('/users/products');
+                    const userProducts = response.data;
+                    setQntd(userProducts.length);
+                    setProductsUser(userProducts);
+                    setFilteredProducts([...products, ...userProducts])
+                } catch (error) {
+                    const isAppError = error instanceof AppError;
+                    const title = isAppError
+                        ? error.message
+                        : 'Não foi possível carregar os produtos do usuário';
+                    toast.show({
+                        title,
+                        placement: 'top',
+                        bgColor: 'red.500',
+                    });
+                }
             }
-        }
-        fetchQntProduct()
-    }, []);
+            fetchData()
+        }, [products])
+    );
 
     useEffect(() => {
+        setPhotoIsLoading(true)
+
         async function fetchUsers() {
             try {
                 const response = await api.get('/users/me');
-                console.log(response.data.avatar)
                 setUser({
                     avatar: response.data.avatar,
                     name: response.data.name
                 })
-
             } catch (error) {
                 const isAppError = error instanceof AppError;
                 const title = isAppError ? error.message : 'Não foi possível carregar o usuário';
@@ -171,32 +186,40 @@ export function Home() {
                     title,
                     placement: 'top',
                     bgColor: 'red.500'
-                });
+                })
+            } finally {
+                setPhotoIsLoading(false)
             }
         }
         fetchUsers()
-    }, []);
+    }, [])
 
     return (
-
         <ScrollView bg='gray.600' contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
             <VStack p={25} mt={10}>
-
                 <HStack>
                     {
-                        user.avatar ?
-                            <UserPhoto
-                                size={45}
-                                alt="Foto do perfil"
-                                source={{ uri: user.avatar }}
+                        photoIsLoading ?
+                            <Skeleton
+                                w={45}
+                                h={45}
+                                rounded="full"
+                                startColor="gray.500"
+                                endColor="gray.400"
                             />
-                            : null
+                            :
+                            user?.avatar && (
+                                <UserPhoto
+                                    source={{ uri: `${api.defaults.baseURL}/images/${user.avatar}` }}
+                                    alt="Foto do perfil"
+                                    size={45}
+                                />
+                            )
                     }
                     <Text ml={4} flex={1}>
                         Boas vindas,{'\n'}
 
                         <Text fontWeight='bold'>{user.name}!</Text>
-
                     </Text>
                     <Button
                         onPress={handleGoNewAds}
@@ -205,11 +228,9 @@ export function Home() {
                         title=" Criar anúncio"
                     />
                 </HStack>
-
                 <Text mt={33} fontSize='sm' color='gray.300'>
                     Seus produtos anunciados para venda
                 </Text>
-
                 <HStack
                     mt={11}
                     alignItems="center"
@@ -231,11 +252,9 @@ export function Home() {
                     </TouchableOpacity>
                     <ArrowRight size={16} color="blue" />
                 </HStack>
-
                 <Text mt={33} color='gray.300'>
                     Compre produtos variados
                 </Text>
-
                 <Input
                     h={45}
                     px={4}
@@ -251,22 +270,29 @@ export function Home() {
                         borderWidth: 1,
                         borderColor: 'gray.500'
                     }}
+                    onChangeText={text => filterProducts(text)}
                     rightElement={
                         <Icon as={MagnifyingGlass} />
                     }
-                    onChangeText={text => filterProducts(text)}
                 />
-
                 <Flex direction="row" flexWrap="wrap" alignItems='center' mt={4}>
-                    {products.map((product) => (
-                        <TouchableOpacity key={product.id} onPress={() => handleGoDetails(product)}>
+                    {filteredProducts.map((product) => (
+                        <TouchableOpacity key={product.id}>
                             <Card
-                                title={product.title}
-                                name={product.name}
-                                avatar={product.avatar}
-                                is_new={false}
-                                price={product.price}
-                                imgAds={product.imgAds}
+                                title={product.name}
+                                avatar={product.avatar || `${api.defaults.baseURL}/images/${user.avatar}`}
+                                is_new={product.is_new}
+                                nameFirts={product.nameFirst}
+                                price={`R$ ${product.price}`}
+                                imgAds={getDynamicImageSource(product)}
+                                onPress={() => handleGoDetails({
+                                    avatar: product.avatar || `${api.defaults.baseURL}/images/${user.avatar}`,
+                                    title: product.name,
+                                    price: product.price,
+                                    nameFirts: product.nameFirst,
+                                    is_new: product.is_new,
+                                    imgAds: getDynamicImageSource(product),
+                                })}
                             />
                         </TouchableOpacity>
                     ))}

@@ -7,6 +7,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useNavigation } from "@react-navigation/native";
 
 import logoImg2x from '@assets/logo2x.png';
+import userPhotoDefault from '@assets/userPhotoDefault.png'
 
 import * as ImagePicker from 'expo-image-picker';
 import { FileInfo } from 'expo-file-system';
@@ -39,14 +40,10 @@ const signUpSchema = yup.object({
 export function SignOut() {
     const [isLoading, setIsLoading] = useState(false);
     const [photoIsLoading, setPhotoIsLoading] = useState(false);
-
     const toast = useToast()
     const { singIn } = useAuth();
-
     const [selectedPhoto, setSelectedPhoto] = useState<any>(null);
-
     const navigation = useNavigation<AuthNavigatorRoutesProps>();
-
     const { control, handleSubmit, formState: { errors } } = useForm<FormDataProps>({
         resolver: yupResolver(signUpSchema),
     });
@@ -116,7 +113,6 @@ export function SignOut() {
                 },
             });
 
-
             await singIn(email, password)
 
             toast.show({
@@ -126,15 +122,13 @@ export function SignOut() {
             });
 
         } catch (error: any) {
-            console.log(error); // Exibe o erro detalhado no console para depuração
+            console.log(error);
 
             let errorMessage = 'Ocorreu um erro ao criar o usuário';
 
             if (error.response && error.response.data && error.response.data.message) {
-                // Se a API retornar uma mensagem de erro, utilize-a para uma mensagem mais específica
                 errorMessage = error.response.data.message;
             } else if (error.message) {
-                // Se houver uma mensagem de erro genérica, use-a como mensagem de erro
                 errorMessage = error.message;
             }
 
@@ -170,23 +164,18 @@ export function SignOut() {
                     <Heading mt={6} fontSize='xl'>
                         Boas vindas!
                     </Heading>
-
                     <Text fontSize='sm' color='gray.200' mt={3}>
                         Crie sua conta e use o espaço para comprar {'\n'}
                         {'   '}itens variados e vender seus produtos
                     </Text>
-
                     <TouchableOpacity onPress={handleUserPhotoSelect}>
-                        <UserPhoto
-                            size={88}
-                            mt={33}
-                            alt="foto do usuario"
-                            source={{ uri: selectedPhoto.uri }}
-                        />
+                        {selectedPhoto ? (
+                            <UserPhoto size={88} mt={33} alt="foto do usuario" source={selectedPhoto} />
+                        ) : (
+                            <UserPhoto size={88} mt={33} alt="foto do usuario" source={userPhotoDefault} />
+                        )}
                     </TouchableOpacity>
-
                     <Center mt={17}>
-
                         <Controller
                             control={control}
                             name="name"
@@ -230,7 +219,6 @@ export function SignOut() {
                                 />
                             )}
                         />
-
                         <Controller
                             control={control}
                             name="password"
@@ -259,20 +247,16 @@ export function SignOut() {
                                 />
                             )}
                         />
-
                     </Center>
-
                     <Button
                         title="Criar"
                         variant="black"
                         onPress={handleSubmit(handleSignUp)}
                         isLoading={isLoading}
                     />
-
                     <Text fontSize='sm' color='gray.400' mt={3}>
                         Já tem uma conta?
                     </Text>
-
                     <Button
                         onPress={handleGoBack}
                         mt={2}
@@ -280,7 +264,6 @@ export function SignOut() {
                         title="Ir para o login"
                         variant="gray"
                     />
-
                 </Center>
             </VStack>
         </ScrollView >

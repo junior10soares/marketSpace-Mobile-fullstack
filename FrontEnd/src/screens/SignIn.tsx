@@ -19,12 +19,9 @@ type FormData = {
 export function SignIn() {
 
     const [isLoading, setIsLoading] = useState(false)
-
     const { singIn } = useAuth();
     const { control, handleSubmit, formState: { errors } } = useForm<FormData>()
-
     const toast = useToast();
-
     const navigation = useNavigation<AuthNavigatorRoutesProps>()
 
     function handleNewAccount() {
@@ -38,9 +35,7 @@ export function SignIn() {
             setIsLoading(true)
 
         } catch (error) {
-
             const isAppError = error instanceof AppError;
-
             const title = isAppError ? error.message : 'Não foi possível entrar. Tente novamente mais tarde.'
             toast.show({
                 title,

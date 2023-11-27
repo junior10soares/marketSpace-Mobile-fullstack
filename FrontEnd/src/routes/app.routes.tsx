@@ -1,25 +1,26 @@
 import { useTheme } from 'native-base';
 import { createBottomTabNavigator, BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { Alert, Platform, Pressable, TouchableOpacity } from 'react-native';
+import { Alert, Platform, Pressable } from 'react-native';
 
 import { House, Tag, SignOut as Leave } from 'phosphor-react-native';
 
 import { MyAds } from '@screens/MyAds';
 import { Home } from '@screens/Home';
 import { SignIn } from '@screens/SignIn';
-import { CardDTO } from '@dtos/CardDTO';
 import { Details } from '@screens/Details';
 import { NewAds } from '@screens/NewAds';
 import { DetailsMyAds } from '@screens/DetailsMyAds';
 import { useAuth } from '@hooks/useAuth';
+import { PropsDetails } from '@components/MyCard';
+import { PropsCard } from '@components/Card';
 
-type AppRoutes = {
+export type AppRoutes = {
     home: undefined;
-    myads: undefined;
+    myads: undefined
     logout: undefined;
-    details: { product: CardDTO }
+    details: { details: PropsCard }
     newAds: undefined;
-    detailsMyAds: undefined
+    detailsMyAds: { details: PropsDetails }
 };
 
 export type AppNavigatorRoutesProps = BottomTabNavigationProp<AppRoutes>;
@@ -29,7 +30,6 @@ const { Navigator: BottomTabNavigator, Screen: BottomTabScreen } = createBottomT
 export function AppRoutes() {
     const { sizes, colors } = useTheme();
     const iconSize = sizes[6];
-
     const { signOut } = useAuth()
 
     return (

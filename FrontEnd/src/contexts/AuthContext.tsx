@@ -24,7 +24,6 @@ export function AuthContextProvider({ children }: AuthContextProviderProps) {
     const [user, setUser] = useState<UserDTO>({} as UserDTO) //Estado que armazena as informações do usuário
     const [isLoadingUserStorageData, setIsLoadingUserStorageData] = useState(true); // Indicador de carregamento das informações do usuário
 
-    // Atualiza as informações do usuário e o token de autorização
     async function userAndTokenUpdate(userData: UserDTO, token: string) {
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         setUser(userData);

@@ -1,4 +1,3 @@
-import { ImageSourcePropType } from "react-native";
 
 export type UserDTO = {
     id: string;
